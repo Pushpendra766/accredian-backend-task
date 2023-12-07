@@ -35,25 +35,30 @@ app.post("/register", (req, res) => {
       if (err) {
         res.send({ err: err });
       }
+      res.send(result);
     }
   );
-  return res.json({ message: "Data received successfully" });
 });
 
 app.post("/login", (req, res) => {
   const { userId, password } = req.body;
-  const passwordHash = bcrypt.hashSync(password, salt);
+
   db.query(
-    "SELECT * FROM user WHERE (username=? OR username=?) AND password=?",
-    [userId, userId, passwordHash],
+    "SELECT * FROM user WHERE username=? OR email=?",
+    [userId, userId],
     (err, result) => {
       if (err) {
         res.send({ err: err });
       }
       if (result.length > 0) {
-        res.send(result);
+        const storedHashedPassword = result[0].password;
+        if (bcrypt.compareSync(password, storedHashedPassword)) {
+          res.send(result);
+        } else {
+          res.send({ message: "Wrong username/password combination" });
+        }
       } else {
-        res.send({ message: "Wrong username/password combination" });
+        res.send({ message: "User not found" });
       }
     }
   );
